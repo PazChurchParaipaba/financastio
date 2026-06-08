@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateBuggySummary();
         renderBuggyTable();
         renderCobrancas();
+        if(typeof renderComissoes === 'function') renderComissoes();
     };
 
     // ==== Buggy Control Logic ====
@@ -85,17 +86,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bDataInput = document.getElementById('b-data');
     if (bDataInput) bDataInput.valueAsDate = new Date();
 
+    const buggyPeriodFilter = document.getElementById('buggy-period-filter');
+    if (buggyPeriodFilter) {
+        buggyPeriodFilter.addEventListener('change', () => updateBuggySummary());
+    }
+
     const updateBuggySummary = () => {
         let receita = 0;
         let despesas = 0;
         let comissaoTotal = 0;
+        const filterValue = buggyPeriodFilter ? buggyPeriodFilter.value : 'all';
+        const now = new Date();
 
         buggyTransactions.forEach(t => {
-            if(t.tipo === 'receita') {
-                receita += parseFloat(t.valor);
-                comissaoTotal += parseFloat(t.comissao_value || 0);
-            } else {
-                despesas += parseFloat(t.valor);
+            let include = true;
+            if (t.date && filterValue !== 'all') {
+                const tDate = new Date(t.date);
+                tDate.setMinutes(tDate.getMinutes() + tDate.getTimezoneOffset());
+                
+                if (filterValue === 'month') {
+                    if (tDate.getMonth() !== now.getMonth() || tDate.getFullYear() !== now.getFullYear()) {
+                        include = false;
+                    }
+                } else if (filterValue === 'week') {
+                    const startOfWeek = new Date(now);
+                    startOfWeek.setDate(now.getDate() - now.getDay());
+                    startOfWeek.setHours(0,0,0,0);
+                    
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    endOfWeek.setHours(23,59,59,999);
+                    
+                    if (tDate < startOfWeek || tDate > endOfWeek) {
+                        include = false;
+                    }
+                }
+            }
+
+            if (include) {
+                if(t.tipo === 'receita') {
+                    receita += parseFloat(t.valor);
+                    comissaoTotal += parseFloat(t.comissao_value || 0);
+                } else {
+                    despesas += parseFloat(t.valor);
+                }
             }
         });
 
@@ -126,12 +160,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 dateStr = d.toLocaleDateString('pt-BR');
             }
 
-            const comissaoText = t.tipo === 'receita' ? formatCurrency(t.comissao_value || 0) : '-';
+            const cleanDesc = t.descricao.replace('(Comissão Paga)', '').trim();
+            const isComissaoPaga = (t.descricao || '').includes('(Comissão Paga)');
+            
+            let comissaoText = '-';
+            if (t.tipo === 'receita') {
+                comissaoText = formatCurrency(t.comissao_value || 0);
+                if (parseFloat(t.comissao_value || 0) > 0) {
+                    comissaoText += isComissaoPaga ? '<br><span style="font-size: 11px; color: var(--positive-color); font-weight: 600;">PAGA</span>' : '<br><span style="font-size: 11px; color: var(--warning-color); font-weight: 600;">PENDENTE</span>';
+                }
+            }
+
             const tipoText = t.tipo === 'receita' ? '<span class="positive"><i class="ph ph-arrow-down-left"></i> Receita</span>' : '<span class="negative"><i class="ph ph-arrow-up-right"></i> Despesa</span>';
 
             tr.innerHTML = `
                 <td>${dateStr}</td>
-                <td><strong>${t.descricao}</strong></td>
+                <td><strong>${cleanDesc}</strong></td>
                 <td>${tipoText}</td>
                 <td><strong>${formatCurrency(t.valor)}</strong></td>
                 <td>${comissaoText}</td>
@@ -156,7 +200,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let comissao_value = 0;
 
         if (tipo === 'receita') {
-            comissao_value = parseFloat(document.getElementById('b-comissao-valor').value) || 0;
+            const porcentagem = parseFloat(document.getElementById('b-comissao-valor').value) || 0;
+            comissao_value = (valor * porcentagem) / 100;
         }
 
         const submitBtn = buggyForm.querySelector('button[type="submit"]');
@@ -184,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             updateBuggySummary();
             renderBuggyTable();
+            if(typeof renderComissoes === 'function') renderComissoes();
         } else {
             alert('Erro ao salvar transação: ' + error.message);
         }
@@ -200,6 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 buggyTransactions = buggyTransactions.filter(t => t.id !== id);
                 updateBuggySummary();
                 renderBuggyTable();
+                if(typeof renderComissoes === 'function') renderComissoes();
             } else {
                 alert('Erro ao deletar: ' + error.message);
             }
@@ -375,6 +422,122 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else {
             alert('Erro ao atualizar: ' + error.message);
+        }
+    };
+
+    // ==== PDF Export ====
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => {
+            const buggyTab = document.getElementById('buggy-tab');
+            const formPanel = buggyTab.querySelector('.form-panel');
+            const periodFilter = document.getElementById('buggy-period-filter');
+            const actionCells = buggyTab.querySelectorAll('.data-table th:last-child, .data-table td:last-child');
+            
+            const originalExportBtnDisplay = exportPdfBtn.style.display;
+            exportPdfBtn.style.display = 'none';
+            if (periodFilter) periodFilter.style.display = 'none';
+            if (formPanel) formPanel.style.display = 'none';
+            actionCells.forEach(el => el.style.display = 'none');
+
+            const originalWidth = buggyTab.style.width;
+            buggyTab.style.width = '1100px';
+
+            const originalBtnText = exportPdfBtn.innerHTML;
+            exportPdfBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
+            exportPdfBtn.style.display = originalExportBtnDisplay; // Show it temporarily if we want the spinner, wait no, we hid it.
+            exportPdfBtn.style.display = 'none'; // Keep hidden during print
+
+            const opt = {
+                margin:       0.3,
+                filename:     `relatorio-buggy-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#06181e' },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(buggyTab).save().then(() => {
+                // Restore UI
+                exportPdfBtn.style.display = originalExportBtnDisplay;
+                exportPdfBtn.innerHTML = originalBtnText;
+                if (periodFilter) periodFilter.style.display = '';
+                if (formPanel) formPanel.style.display = '';
+                actionCells.forEach(el => el.style.display = '');
+                buggyTab.style.width = originalWidth;
+            });
+        });
+    }
+
+    // ==== Comissoes Logic ====
+    const comissoesTbody = document.getElementById('comissoes-tbody');
+    
+    window.renderComissoes = () => {
+        if (!comissoesTbody) return;
+        comissoesTbody.innerHTML = '';
+        
+        let pendentes = 0;
+        let pagas = 0;
+
+        const comissoes = buggyTransactions.filter(t => parseFloat(t.comissao_value || 0) > 0);
+
+        if (comissoes.length === 0) {
+            comissoesTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhuma comissão registrada.</td></tr>`;
+        }
+
+        comissoes.forEach(t => {
+            const isPaga = (t.descricao || '').includes('(Comissão Paga)');
+            const valorComissao = parseFloat(t.comissao_value);
+            
+            if (isPaga) pagas += valorComissao;
+            else pendentes += valorComissao;
+
+            const tr = document.createElement('tr');
+            
+            let dateStr = t.date;
+            if(t.date) {
+                const d = new Date(t.date);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                dateStr = d.toLocaleDateString('pt-BR');
+            }
+
+            const cleanDesc = t.descricao.replace('(Comissão Paga)', '').trim();
+            const statusBadge = isPaga ? '<span class="status-badge status-pago">PAGA</span>' : '<span class="status-badge status-pendente">PENDENTE</span>';
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><strong>${cleanDesc}</strong></td>
+                <td class="warning"><strong>${formatCurrency(valorComissao)}</strong></td>
+                <td>${statusBadge}</td>
+                <td class="action-btns">
+                    ${!isPaga ? `<button class="btn btn-sm btn-success" onclick="marcarComissaoPaga('${t.id}')" title="Marcar como Paga"><i class="ph ph-check-circle"></i> Marcar Paga</button>` : ''}
+                </td>
+            `;
+            comissoesTbody.appendChild(tr);
+        });
+
+        const elPendentes = document.getElementById('comissoes-pendentes');
+        const elPagas = document.getElementById('comissoes-pagas');
+        if (elPendentes) elPendentes.textContent = formatCurrency(pendentes);
+        if (elPagas) elPagas.textContent = formatCurrency(pagas);
+    };
+
+    window.marcarComissaoPaga = async (id) => {
+        const transaction = buggyTransactions.find(t => t.id === id);
+        if(!transaction) return;
+
+        const novaDescricao = transaction.descricao + ' (Comissão Paga)';
+        
+        const { error } = await supabase
+            .from('buggy_transactions')
+            .update({ descricao: novaDescricao })
+            .eq('id', id);
+
+        if (!error) {
+            transaction.descricao = novaDescricao;
+            renderComissoes();
+            renderBuggyTable();
+        } else {
+            alert('Erro ao marcar comissão como paga: ' + error.message);
         }
     };
 
