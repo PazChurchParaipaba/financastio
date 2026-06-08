@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==== Buggy Control Logic ====
     const buggyForm = document.getElementById('buggy-form');
     const buggyTbody = document.getElementById('buggy-tbody');
+    const bDataInput = document.getElementById('b-data');
+    if (bDataInput) bDataInput.valueAsDate = new Date();
 
     const updateBuggySummary = () => {
         let receita = 0;
@@ -116,10 +118,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         buggyTransactions.forEach(t => {
             const tr = document.createElement('tr');
             
+            let dateStr = t.date;
+            if(t.date) {
+                const d = new Date(t.date);
+                // Adjust to avoid timezone offset issues if it's stored as simple date
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                dateStr = d.toLocaleDateString('pt-BR');
+            }
+
             const comissaoText = t.tipo === 'receita' ? formatCurrency(t.comissao_value || 0) : '-';
             const tipoText = t.tipo === 'receita' ? '<span class="positive"><i class="ph ph-arrow-down-left"></i> Receita</span>' : '<span class="negative"><i class="ph ph-arrow-up-right"></i> Despesa</span>';
 
             tr.innerHTML = `
+                <td>${dateStr}</td>
                 <td><strong>${t.descricao}</strong></td>
                 <td>${tipoText}</td>
                 <td><strong>${formatCurrency(t.valor)}</strong></td>
@@ -141,6 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const descricao = document.getElementById('b-descricao').value;
         const valor = parseFloat(document.getElementById('b-valor').value);
         const status = document.getElementById('b-status').value;
+        const dateInput = document.getElementById('b-data').value;
         let comissao_value = 0;
 
         if (tipo === 'receita') {
@@ -155,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data, error } = await supabase
             .from('buggy_transactions')
             .insert([
-                { tipo, descricao, valor, comissao_value, status }
+                { date: dateInput, tipo, descricao, valor, comissao_value, status }
             ])
             .select();
 
@@ -165,6 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!error && data) {
             buggyTransactions.unshift(data[0]);
             buggyForm.reset();
+            document.getElementById('b-data').valueAsDate = new Date();
             document.getElementById('b-comissao-valor').value = '';
             document.getElementById('b-tipo').value = 'receita';
             colComissao.style.display = 'block';
