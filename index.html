@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buggy Finance & Cobranças</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo" style="justify-content: center; margin-bottom: 40px; text-align: center;">
+                <img src="image.png" alt="Everton Azevedo" style="max-width: 160px; height: auto;">
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-target="buggy-tab">
+                    <i class="ph ph-steering-wheel"></i> Controle do Buggy
+                </button>
+                <button class="nav-item" data-target="cobrancas-tab">
+                    <i class="ph ph-wallet"></i> Cobranças Pessoais
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Buggy Tab -->
+            <section id="buggy-tab" class="tab-content active">
+                <header class="header">
+                    <h1>Resumo do Buggy</h1>
+                    <div class="date-display" id="current-date"></div>
+                </header>
+
+                <div class="cards-grid">
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-trend-up"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Receita Total</span>
+                            <h3 class="card-value positive" id="buggy-receita">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-trend-down"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Despesas</span>
+                            <h3 class="card-value negative" id="buggy-despesas">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-users"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Comissão Motorista</span>
+                            <h3 class="card-value warning" id="buggy-comissao">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card highlight">
+                        <div class="card-icon"><i class="ph ph-currency-circle-dollar"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Líquido do Buggy</span>
+                            <h3 class="card-value" id="buggy-liquido">R$ 0,00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="form-panel card">
+                        <h2>Nova Transação</h2>
+                        <form id="buggy-form">
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select id="b-tipo" required>
+                                    <option value="receita">Recebimento (Passeio)</option>
+                                    <option value="despesa">Despesa (Combustível, Manutenção, etc)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição</label>
+                                <input type="text" id="b-descricao" placeholder="Ex: Passeio Praia das Fontes" required>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Valor (R$)</label>
+                                    <input type="number" id="b-valor" step="0.01" min="0" required>
+                                </div>
+                                <div class="col" id="col-comissao">
+                                    <label>Comissão Motorista (R$)</label>
+                                    <input type="number" id="b-comissao-valor" step="0.01" min="0" placeholder="Ex: 50.00">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Status</label>
+                                    <select id="b-status">
+                                        <option value="pago">Pago</option>
+                                        <option value="pendente">Pendente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Adicionar Transação</button>
+                        </form>
+                    </div>
+
+                    <div class="list-panel card">
+                        <h2>Histórico de Transações</h2>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Comissão</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="buggy-tbody">
+                                    <!-- Rows here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cobranças Tab -->
+            <section id="cobrancas-tab" class="tab-content">
+                <header class="header">
+                    <h1>Cobranças Pessoais</h1>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Gerencie quem deve a você.</p>
+                </header>
+
+                <div class="content-grid">
+                    <div class="form-panel card">
+                        <h2>Nova Cobrança</h2>
+                        <form id="cobranca-form">
+                            <div class="form-group">
+                                <label>Nome do Devedor</label>
+                                <input type="text" id="c-nome" placeholder="Nome completo ou apelido" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Motivo / Descrição</label>
+                                <input type="text" id="c-descricao" placeholder="Ex: Empréstimo, Venda de peças..." required>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Valor (R$)</label>
+                                    <input type="number" id="c-valor" step="0.01" min="0" required>
+                                </div>
+                                <div class="col">
+                                    <label>Data de Vencimento</label>
+                                    <input type="date" id="c-data" required>
+                                </div>
+                            </div>
+                            <div class="form-actions" style="display: flex; gap: 8px;">
+                                <button type="submit" class="btn btn-primary" id="c-submit-btn">Adicionar Cobrança</button>
+                                <button type="button" class="btn" id="c-cancel-btn" style="display: none; margin-top: 12px; background-color: var(--sidebar-bg); border: 1px solid var(--border-color); color: var(--text-primary);">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="list-panel card">
+                        <h2>Lista de Devedores</h2>
+                        <div class="cobrancas-list" id="cobrancas-list">
+                            <!-- Cards here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
