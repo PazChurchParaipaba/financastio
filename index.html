@@ -24,6 +24,12 @@
                 <button class="nav-item" data-target="cobrancas-tab">
                     <i class="ph ph-wallet"></i> Cobranças Pessoais
                 </button>
+                <button class="nav-item" data-target="emprestimos-tab">
+                    <i class="ph ph-hand-coins"></i> Empréstimos
+                </button>
+                <button class="nav-item" data-target="geral-tab">
+                    <i class="ph ph-chart-line-up"></i> Receitas e Despesas
+                </button>
                 <button class="nav-item" data-target="comissoes-tab">
                     <i class="ph ph-users"></i> Comissões Motorista
                 </button>
@@ -232,6 +238,168 @@
                                 <!-- Rows here -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Geral Tab -->
+            <section id="geral-tab" class="tab-content">
+                <header class="header">
+                    <h1>Receitas e Despesas Gerais</h1>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Controle geral de finanças (separado do Buggy).</p>
+                </header>
+
+                <div class="cards-grid">
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-trend-up"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Receitas</span>
+                            <h3 class="card-value positive" id="geral-receita">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-trend-down"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Despesas</span>
+                            <h3 class="card-value negative" id="geral-despesa">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card highlight">
+                        <div class="card-icon"><i class="ph ph-currency-circle-dollar"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Saldo Líquido</span>
+                            <h3 class="card-value" id="geral-liquido">R$ 0,00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="form-panel card">
+                        <h2>Nova Transação</h2>
+                        <form id="geral-form">
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select id="g-tipo" required>
+                                    <option value="receita">Receita</option>
+                                    <option value="despesa">Despesa</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição</label>
+                                <input type="text" id="g-descricao" placeholder="Ex: Salário, Conta de luz, etc" required>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Valor (R$)</label>
+                                    <input type="number" id="g-valor" step="0.01" min="0" required>
+                                </div>
+                                <div class="col">
+                                    <label>Status</label>
+                                    <select id="g-status">
+                                        <option value="pago">Pago</option>
+                                        <option value="pendente">Pendente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Data</label>
+                                <input type="date" id="g-data" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Adicionar Transação</button>
+                        </form>
+                    </div>
+
+                    <div class="list-panel card">
+                        <h2>Histórico de Transações</h2>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="geral-tbody">
+                                    <!-- Rows here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Emprestimos Tab -->
+            <section id="emprestimos-tab" class="tab-content">
+                <header class="header">
+                    <h1>Empréstimos Realizados</h1>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Controle de dinheiro emprestado, aguardando devolução sem parcelas definidas.</p>
+                </header>
+
+                <div class="cards-grid">
+                    <div class="card stat-card highlight">
+                        <div class="card-icon"><i class="ph ph-hourglass-high"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Aguardando Retorno</span>
+                            <h3 class="card-value warning" id="emprestimos-pendentes">R$ 0,00</h3>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="card-icon"><i class="ph ph-check-circle"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Total Devolvido</span>
+                            <h3 class="card-value positive" id="emprestimos-devolvidos">R$ 0,00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="form-panel card">
+                        <h2>Novo Empréstimo (Saída)</h2>
+                        <form id="emprestimo-form">
+                            <div class="form-group">
+                                <label>Para quem foi emprestado?</label>
+                                <input type="text" id="e-nome" placeholder="Nome da pessoa" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Motivo / Observação</label>
+                                <input type="text" id="e-descricao" placeholder="Ex: Empréstimo para reforma" required>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Valor (R$)</label>
+                                    <input type="number" id="e-valor" step="0.01" min="0" required>
+                                </div>
+                                <div class="col">
+                                    <label>Data de Saída</label>
+                                    <input type="date" id="e-data" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Registrar Saída</button>
+                        </form>
+                    </div>
+
+                    <div class="list-panel card">
+                        <h2>Lista de Empréstimos</h2>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Pessoa</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emprestimos-tbody">
+                                    <!-- Rows here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>

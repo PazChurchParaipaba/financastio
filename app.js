@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==== State Management ====
     let buggyTransactions = [];
     let personalDebts = [];
+    let geralTransactions = [];
+    let emprestimosTransactions = [];
     let editingCobrancaId = null;
 
     const formatCurrency = (value) => {
@@ -74,10 +76,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro ao buscar cobranças:', pError);
         }
 
+        // Load General Transactions
+        const { data: gData, error: gError } = await supabase
+            .from('general_transactions')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (!gError && gData) {
+            geralTransactions = gData;
+        } else {
+            console.error('Erro ao buscar transações gerais:', gError);
+        }
+
+        // Load Emprestimos
+        const { data: eData, error: eError } = await supabase
+            .from('loans')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (!eError && eData) {
+            emprestimosTransactions = eData;
+        } else {
+            console.error('Erro ao buscar empréstimos:', eError);
+        }
+
         updateBuggySummary();
         renderBuggyTable();
         renderCobrancas();
         if(typeof renderComissoes === 'function') renderComissoes();
+        updateGeralSummary();
+        renderGeralTable();
+        updateEmprestimosSummary();
+        renderEmprestimosTable();
     };
 
     // ==== Buggy Control Logic ====
@@ -538,6 +568,284 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderBuggyTable();
         } else {
             alert('Erro ao marcar comissão como paga: ' + error.message);
+        }
+    };
+
+    // ==== Geral Logic ====
+    const geralForm = document.getElementById('geral-form');
+    const geralTbody = document.getElementById('geral-tbody');
+    const gDataInput = document.getElementById('g-data');
+    if (gDataInput) gDataInput.valueAsDate = new Date();
+
+    const updateGeralSummary = () => {
+        let receita = 0;
+        let despesa = 0;
+
+        geralTransactions.forEach(t => {
+            if(t.tipo === 'receita') {
+                receita += parseFloat(t.valor);
+            } else {
+                despesa += parseFloat(t.valor);
+            }
+        });
+
+        const liquido = receita - despesa;
+
+        const elReceita = document.getElementById('geral-receita');
+        const elDespesa = document.getElementById('geral-despesa');
+        const elLiquido = document.getElementById('geral-liquido');
+
+        if(elReceita) elReceita.textContent = formatCurrency(receita);
+        if(elDespesa) elDespesa.textContent = formatCurrency(despesa);
+        if(elLiquido) elLiquido.textContent = formatCurrency(liquido);
+    };
+
+    const renderGeralTable = () => {
+        if(!geralTbody) return;
+        geralTbody.innerHTML = '';
+
+        if (geralTransactions.length === 0) {
+            geralTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhuma transação registrada.</td></tr>`;
+            return;
+        }
+
+        geralTransactions.forEach(t => {
+            const tr = document.createElement('tr');
+            
+            let dateStr = t.date;
+            if(t.date) {
+                const d = new Date(t.date);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                dateStr = d.toLocaleDateString('pt-BR');
+            }
+
+            const tipoText = t.tipo === 'receita' ? '<span class="positive"><i class="ph ph-arrow-down-left"></i> Receita</span>' : '<span class="negative"><i class="ph ph-arrow-up-right"></i> Despesa</span>';
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><strong>${t.descricao}</strong></td>
+                <td>${tipoText}</td>
+                <td><strong>${formatCurrency(t.valor)}</strong></td>
+                <td><span class="status-badge status-${t.status}">${t.status.toUpperCase()}</span></td>
+                <td class="action-btns">
+                    ${t.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="marcarGeralPago('${t.id}')" title="Marcar como Pago"><i class="ph ph-check"></i></button>` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deletarGeral('${t.id}')" title="Excluir"><i class="ph ph-trash"></i></button>
+                </td>
+            `;
+            geralTbody.appendChild(tr);
+        });
+    };
+
+    if(geralForm) {
+        geralForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tipo = document.getElementById('g-tipo').value;
+            const descricao = document.getElementById('g-descricao').value;
+            const valor = parseFloat(document.getElementById('g-valor').value);
+            const status = document.getElementById('g-status').value;
+            const dateInput = document.getElementById('g-data').value;
+
+            const submitBtn = geralForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Salvando...';
+            submitBtn.disabled = true;
+
+            const { data, error } = await supabase
+                .from('general_transactions')
+                .insert([
+                    { date: dateInput, tipo, descricao, valor, status }
+                ])
+                .select();
+
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (!error && data) {
+                geralTransactions.unshift(data[0]);
+                geralForm.reset();
+                document.getElementById('g-data').valueAsDate = new Date();
+                document.getElementById('g-tipo').value = 'receita';
+                
+                updateGeralSummary();
+                renderGeralTable();
+            } else {
+                alert('Erro ao salvar transação: ' + error.message);
+                console.error(error);
+            }
+        });
+    }
+
+    window.deletarGeral = async (id) => {
+        if(confirm('Tem certeza que deseja deletar esta transação?')) {
+            const { error } = await supabase
+                .from('general_transactions')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                geralTransactions = geralTransactions.filter(t => t.id !== id);
+                updateGeralSummary();
+                renderGeralTable();
+            } else {
+                alert('Erro ao deletar: ' + error.message);
+            }
+        }
+    };
+
+    window.marcarGeralPago = async (id) => {
+        const { data, error } = await supabase
+            .from('general_transactions')
+            .update({ status: 'pago' })
+            .eq('id', id)
+            .select();
+
+        if (!error && data) {
+            const index = geralTransactions.findIndex(t => t.id === id);
+            if(index !== -1) {
+                geralTransactions[index].status = 'pago';
+                renderGeralTable();
+            }
+        } else {
+            alert('Erro ao atualizar: ' + error.message);
+        }
+    };
+
+    // ==== Emprestimos Logic ====
+    const emprestimoForm = document.getElementById('emprestimo-form');
+    const emprestimosTbody = document.getElementById('emprestimos-tbody');
+    const eDataInput = document.getElementById('e-data');
+    if (eDataInput) eDataInput.valueAsDate = new Date();
+
+    const updateEmprestimosSummary = () => {
+        let pendentes = 0;
+        let devolvidos = 0;
+
+        emprestimosTransactions.forEach(t => {
+            if(t.status === 'pendente') {
+                pendentes += parseFloat(t.valor);
+            } else if (t.status === 'devolvido') {
+                devolvidos += parseFloat(t.valor);
+            }
+        });
+
+        const elPendentes = document.getElementById('emprestimos-pendentes');
+        const elDevolvidos = document.getElementById('emprestimos-devolvidos');
+
+        if(elPendentes) elPendentes.textContent = formatCurrency(pendentes);
+        if(elDevolvidos) elDevolvidos.textContent = formatCurrency(devolvidos);
+    };
+
+    const renderEmprestimosTable = () => {
+        if(!emprestimosTbody) return;
+        emprestimosTbody.innerHTML = '';
+
+        if (emprestimosTransactions.length === 0) {
+            emprestimosTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhum empréstimo registrado.</td></tr>`;
+            return;
+        }
+
+        emprestimosTransactions.forEach(t => {
+            const tr = document.createElement('tr');
+            
+            let dateStr = t.date;
+            if(t.date) {
+                const d = new Date(t.date);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                dateStr = d.toLocaleDateString('pt-BR');
+            }
+
+            const statusClass = t.status === 'devolvido' ? 'status-pago' : 'status-pendente';
+            const statusText = t.status === 'devolvido' ? 'DEVOLVIDO' : 'AGUARDANDO';
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><strong>${t.nome}</strong><br><span style="font-size: 12px; color: var(--text-secondary);">${t.descricao}</span></td>
+                <td><strong>${formatCurrency(t.valor)}</strong></td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td class="action-btns">
+                    ${t.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="marcarEmprestimoBaixado('${t.id}')" title="Dar Baixa (Devolvido)"><i class="ph ph-check"></i> Baixar</button>` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deletarEmprestimo('${t.id}')" title="Excluir"><i class="ph ph-trash"></i></button>
+                </td>
+            `;
+            emprestimosTbody.appendChild(tr);
+        });
+    };
+
+    if(emprestimoForm) {
+        emprestimoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('e-nome').value;
+            const descricao = document.getElementById('e-descricao').value;
+            const valor = parseFloat(document.getElementById('e-valor').value);
+            const dateInput = document.getElementById('e-data').value;
+            const status = 'pendente';
+
+            const submitBtn = emprestimoForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Registrando...';
+            submitBtn.disabled = true;
+
+            const { data, error } = await supabase
+                .from('loans')
+                .insert([
+                    { date: dateInput, nome, descricao, valor, status }
+                ])
+                .select();
+
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (!error && data) {
+                emprestimosTransactions.unshift(data[0]);
+                emprestimoForm.reset();
+                document.getElementById('e-data').valueAsDate = new Date();
+                
+                updateEmprestimosSummary();
+                renderEmprestimosTable();
+            } else {
+                alert('Erro ao salvar empréstimo: ' + error.message);
+                console.error(error);
+            }
+        });
+    }
+
+    window.deletarEmprestimo = async (id) => {
+        if(confirm('Tem certeza que deseja deletar este empréstimo?')) {
+            const { error } = await supabase
+                .from('loans')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                emprestimosTransactions = emprestimosTransactions.filter(t => t.id !== id);
+                updateEmprestimosSummary();
+                renderEmprestimosTable();
+            } else {
+                alert('Erro ao deletar: ' + error.message);
+            }
+        }
+    };
+
+    window.marcarEmprestimoBaixado = async (id) => {
+        if(confirm('Confirmar a devolução deste dinheiro?')) {
+            const { data, error } = await supabase
+                .from('loans')
+                .update({ status: 'devolvido' })
+                .eq('id', id)
+                .select();
+
+            if (!error && data) {
+                const index = emprestimosTransactions.findIndex(t => t.id === id);
+                if(index !== -1) {
+                    emprestimosTransactions[index].status = 'devolvido';
+                    updateEmprestimosSummary();
+                    renderEmprestimosTable();
+                }
+            } else {
+                alert('Erro ao dar baixa: ' + error.message);
+            }
         }
     };
 
