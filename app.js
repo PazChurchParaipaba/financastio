@@ -125,6 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let receita = 0;
         let despesas = 0;
         let comissaoTotal = 0;
+        let comissaoPagaTotal = 0;
         const filterValue = buggyPeriodFilter ? buggyPeriodFilter.value : 'all';
         const now = new Date();
 
@@ -156,14 +157,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (include) {
                 if(t.tipo === 'receita') {
                     receita += parseFloat(t.valor);
-                    comissaoTotal += parseFloat(t.comissao_value || 0);
+                    const val = parseFloat(t.comissao_value || 0);
+                    comissaoTotal += val;
+                    if ((t.descricao || '').includes('(Comissão Paga)')) {
+                        comissaoPagaTotal += val;
+                    }
                 } else {
                     despesas += parseFloat(t.valor);
                 }
             }
         });
 
-        const liquido = receita - despesas - comissaoTotal;
+        const liquido = receita - despesas - comissaoPagaTotal;
 
         document.getElementById('buggy-receita').textContent = formatCurrency(receita);
         document.getElementById('buggy-despesas').textContent = formatCurrency(despesas);
@@ -203,12 +208,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const tipoText = t.tipo === 'receita' ? '<span class="positive"><i class="ph ph-arrow-down-left"></i> Receita</span>' : '<span class="negative"><i class="ph ph-arrow-up-right"></i> Despesa</span>';
 
+            const valorLiquido = t.tipo === 'receita' ? (isComissaoPaga ? parseFloat(t.valor) - parseFloat(t.comissao_value || 0) : parseFloat(t.valor)) : parseFloat(t.valor);
+
             tr.innerHTML = `
                 <td>${dateStr}</td>
                 <td><strong>${cleanDesc}</strong></td>
                 <td>${tipoText}</td>
                 <td><strong>${formatCurrency(t.valor)}</strong></td>
                 <td>${comissaoText}</td>
+                <td style="color: var(--positive-color);"><strong>${formatCurrency(valorLiquido)}</strong></td>
                 <td><span class="status-badge status-${t.status}">${t.status.toUpperCase()}</span></td>
                 <td class="action-btns">
                     ${t.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="marcarBuggyPago('${t.id}')" title="Marcar como Pago"><i class="ph ph-check"></i></button>` : ''}
