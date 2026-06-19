@@ -245,9 +245,21 @@
 
             <!-- Geral Tab -->
             <section id="geral-tab" class="tab-content">
-                <header class="header">
-                    <h1>Receitas e Despesas Gerais</h1>
-                    <p style="color: var(--text-secondary); margin-top: 8px;">Controle geral de finanças (separado do Buggy).</p>
+                <header class="header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>Receitas e Despesas Gerais</h1>
+                        <p style="color: var(--text-secondary); margin-top: 8px;">Controle geral de finanças (separado do Buggy).</p>
+                    </div>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <button id="export-geral-pdf-btn" class="btn btn-sm" style="background: var(--primary-color); color: #06181e; border: none; display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-file-pdf"></i> Exportar PDF
+                        </button>
+                        <select id="geral-period-filter" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--sidebar-bg); color: var(--text-primary); outline: none; cursor: pointer;">
+                            <option value="all">Todo o Período</option>
+                            <option value="month">Este Mês</option>
+                            <option value="last_month">Mês Passado</option>
+                        </select>
+                    </div>
                 </header>
 
                 <div class="cards-grid">

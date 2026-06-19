@@ -585,11 +585,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const gDataInput = document.getElementById('g-data');
     if (gDataInput) gDataInput.valueAsDate = new Date();
 
+    const geralPeriodFilter = document.getElementById('geral-period-filter');
+    if (geralPeriodFilter) {
+        geralPeriodFilter.addEventListener('change', () => {
+            updateGeralSummary();
+            renderGeralTable();
+        });
+    }
+
+    const getFilteredGeralTransactions = () => {
+        const filterValue = geralPeriodFilter ? geralPeriodFilter.value : 'all';
+        const now = new Date();
+
+        return geralTransactions.filter(t => {
+            if (!t.date || filterValue === 'all') return true;
+            
+            const tDate = new Date(t.date);
+            tDate.setMinutes(tDate.getMinutes() + tDate.getTimezoneOffset());
+            
+            if (filterValue === 'month') {
+                return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
+            } else if (filterValue === 'last_month') {
+                const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                return tDate.getMonth() === lastMonth.getMonth() && tDate.getFullYear() === lastMonth.getFullYear();
+            }
+            return true;
+        });
+    };
+
     const updateGeralSummary = () => {
         let receita = 0;
         let despesa = 0;
+        
+        const filtered = getFilteredGeralTransactions();
 
-        geralTransactions.forEach(t => {
+        filtered.forEach(t => {
             if(t.tipo === 'receita') {
                 receita += parseFloat(t.valor);
             } else {
@@ -611,13 +641,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderGeralTable = () => {
         if(!geralTbody) return;
         geralTbody.innerHTML = '';
+        
+        const filtered = getFilteredGeralTransactions();
 
-        if (geralTransactions.length === 0) {
+        if (filtered.length === 0) {
             geralTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhuma transação registrada.</td></tr>`;
             return;
         }
 
-        geralTransactions.forEach(t => {
+        filtered.forEach(t => {
             const tr = document.createElement('tr');
             
             let dateStr = t.date;
@@ -643,6 +675,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             geralTbody.appendChild(tr);
         });
     };
+
+    // ==== Geral PDF Export ====
+    const exportGeralPdfBtn = document.getElementById('export-geral-pdf-btn');
+    if (exportGeralPdfBtn) {
+        exportGeralPdfBtn.addEventListener('click', () => {
+            const geralTab = document.getElementById('geral-tab');
+            const formPanel = geralTab.querySelector('.form-panel');
+            const periodFilter = document.getElementById('geral-period-filter');
+            const actionCells = geralTab.querySelectorAll('.data-table th:last-child, .data-table td:last-child');
+            
+            const originalExportBtnDisplay = exportGeralPdfBtn.style.display;
+            exportGeralPdfBtn.style.display = 'none';
+            if (periodFilter) periodFilter.style.display = 'none';
+            if (formPanel) formPanel.style.display = 'none';
+            actionCells.forEach(el => el.style.display = 'none');
+
+            const originalWidth = geralTab.style.width;
+            geralTab.style.width = '1100px';
+
+            const originalBtnText = exportGeralPdfBtn.innerHTML;
+            exportGeralPdfBtn.style.display = 'none'; 
+
+            const opt = {
+                margin:       0.3,
+                filename:     `relatorio-geral-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#06181e' },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(geralTab).save().then(() => {
+                exportGeralPdfBtn.style.display = originalExportBtnDisplay;
+                exportGeralPdfBtn.innerHTML = originalBtnText;
+                if (periodFilter) periodFilter.style.display = '';
+                if (formPanel) formPanel.style.display = '';
+                actionCells.forEach(el => el.style.display = '');
+                geralTab.style.width = originalWidth;
+            });
+        });
+    }
 
     if(geralForm) {
         geralForm.addEventListener('submit', async (e) => {
