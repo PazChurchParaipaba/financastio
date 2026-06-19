@@ -479,7 +479,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionCells.forEach(el => el.style.display = 'none');
 
             const originalWidth = buggyTab.style.width;
+            const originalBg = buggyTab.style.backgroundColor;
+            const originalPadding = buggyTab.style.padding;
             buggyTab.style.width = '1100px';
+            buggyTab.style.backgroundColor = '#06181e';
+            buggyTab.style.padding = '32px';
 
             const originalBtnText = exportPdfBtn.innerHTML;
             exportPdfBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
@@ -502,6 +506,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (formPanel) formPanel.style.display = '';
                 actionCells.forEach(el => el.style.display = '');
                 buggyTab.style.width = originalWidth;
+                buggyTab.style.backgroundColor = originalBg;
+                buggyTab.style.padding = originalPadding;
             });
         });
     }
@@ -692,7 +698,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionCells.forEach(el => el.style.display = 'none');
 
             const originalWidth = geralTab.style.width;
+            const originalBg = geralTab.style.backgroundColor;
+            const originalPadding = geralTab.style.padding;
             geralTab.style.width = '1100px';
+            geralTab.style.backgroundColor = '#06181e';
+            geralTab.style.padding = '32px';
 
             const originalBtnText = exportGeralPdfBtn.innerHTML;
             exportGeralPdfBtn.style.display = 'none'; 
@@ -712,6 +722,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (formPanel) formPanel.style.display = '';
                 actionCells.forEach(el => el.style.display = '');
                 geralTab.style.width = originalWidth;
+                geralTab.style.backgroundColor = originalBg;
+                geralTab.style.padding = originalPadding;
             });
         });
     }
