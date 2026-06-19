@@ -479,22 +479,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionCells.forEach(el => el.style.display = 'none');
 
             const originalWidth = buggyTab.style.width;
-            const originalBg = buggyTab.style.backgroundColor;
-            const originalPadding = buggyTab.style.padding;
             buggyTab.style.width = '1100px';
-            buggyTab.style.backgroundColor = '#06181e';
-            buggyTab.style.padding = '32px';
+            buggyTab.classList.add('pdf-export');
 
             const originalBtnText = exportPdfBtn.innerHTML;
             exportPdfBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
-            exportPdfBtn.style.display = originalExportBtnDisplay; // Show it temporarily if we want the spinner, wait no, we hid it.
             exportPdfBtn.style.display = 'none'; // Keep hidden during print
 
             const opt = {
                 margin:       0.3,
                 filename:     `relatorio-buggy-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#06181e' },
+                html2canvas:  { scale: 2, backgroundColor: '#ffffff' },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
@@ -506,8 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (formPanel) formPanel.style.display = '';
                 actionCells.forEach(el => el.style.display = '');
                 buggyTab.style.width = originalWidth;
-                buggyTab.style.backgroundColor = originalBg;
-                buggyTab.style.padding = originalPadding;
+                buggyTab.classList.remove('pdf-export');
             });
         });
     }
@@ -698,11 +693,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             actionCells.forEach(el => el.style.display = 'none');
 
             const originalWidth = geralTab.style.width;
-            const originalBg = geralTab.style.backgroundColor;
-            const originalPadding = geralTab.style.padding;
             geralTab.style.width = '1100px';
-            geralTab.style.backgroundColor = '#06181e';
-            geralTab.style.padding = '32px';
+            geralTab.classList.add('pdf-export');
 
             const originalBtnText = exportGeralPdfBtn.innerHTML;
             exportGeralPdfBtn.style.display = 'none'; 
@@ -711,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 margin:       0.3,
                 filename:     `relatorio-geral-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#06181e' },
+                html2canvas:  { scale: 2, backgroundColor: '#ffffff' },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
 
@@ -722,8 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (formPanel) formPanel.style.display = '';
                 actionCells.forEach(el => el.style.display = '');
                 geralTab.style.width = originalWidth;
-                geralTab.style.backgroundColor = originalBg;
-                geralTab.style.padding = originalPadding;
+                geralTab.classList.remove('pdf-export');
             });
         });
     }

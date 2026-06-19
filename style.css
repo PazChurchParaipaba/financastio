@@ -471,3 +471,38 @@ input:focus, select:focus {
         justify-content: space-between;
     }
 }
+
+/* PDF Export Mode (Light Theme) */
+.pdf-export {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+.pdf-export * {
+    color: #000000 !important;
+}
+.pdf-export .card {
+    background-color: #f8f9fa !important;
+    border-color: #e5e7eb !important;
+    box-shadow: none !important;
+}
+.pdf-export .card-icon {
+    background-color: #e5e7eb !important;
+    color: #000000 !important;
+}
+.pdf-export .text-secondary, .pdf-export p, .pdf-export span {
+    color: #4b5563 !important;
+}
+.pdf-export th {
+    color: #4b5563 !important;
+    border-bottom: 2px solid #e5e7eb !important;
+}
+.pdf-export td {
+    border-bottom: 1px solid #e5e7eb !important;
+    color: #000000 !important;
+}
+.pdf-export strong {
+    color: #000000 !important;
+}
+.pdf-export .positive { color: #059669 !important; }
+.pdf-export .negative { color: #dc2626 !important; }
+.pdf-export .warning { color: #d97706 !important; }
