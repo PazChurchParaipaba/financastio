@@ -113,6 +113,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro ao buscar reuniões:', rError);
         }
 
+        // Load Almocos
+        const { data: aData, error: aError } = await supabase
+            .from('lunches')
+            .select('*')
+            .order('data', { ascending: false });
+
+        if (!aError && aData) {
+            almocos = aData;
+        } else {
+            console.error('Erro ao buscar almoços:', aError);
+        }
+
         updateBuggySummary();
         renderBuggyTable();
         renderCobrancas();
@@ -122,6 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateEmprestimosSummary();
         renderEmprestimosTable();
         if(typeof renderReunioesTable === 'function') renderReunioesTable();
+        if(typeof renderAlmocos === 'function') renderAlmocos();
     };
 
     // ==== Buggy Control Logic ====
@@ -1037,6 +1050,130 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!error) {
                 reunioes = reunioes.filter(t => t.id !== id);
                 renderReunioesTable();
+            } else {
+                alert('Erro ao deletar: ' + error.message);
+            }
+        }
+    };
+
+    // ==== Almocos Logic ====
+    let almocos = [];
+    const almocoForm = document.getElementById('almoco-form');
+    const almocosTbody = document.getElementById('almocos-tbody');
+    const aDataInput = document.getElementById('a-data');
+    if (aDataInput) aDataInput.valueAsDate = new Date();
+
+    window.renderAlmocos = () => {
+        if(!almocosTbody) return;
+        almocosTbody.innerHTML = '';
+        
+        let totalGasto = 0;
+        const estabelecimentosMap = {};
+
+        if (almocos.length === 0) {
+            almocosTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhum almoço registrado.</td></tr>`;
+        }
+
+        almocos.forEach(t => {
+            const valor = parseFloat(t.valor || 0);
+            totalGasto += valor;
+            
+            const estabelecimento = t.estabelecimento || 'Outros';
+            if (!estabelecimentosMap[estabelecimento]) {
+                estabelecimentosMap[estabelecimento] = 0;
+            }
+            estabelecimentosMap[estabelecimento] += valor;
+
+            const tr = document.createElement('tr');
+            
+            let dateStr = t.data;
+            if(t.data) {
+                const parts = t.data.split('-');
+                if(parts.length === 3) {
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><strong>${estabelecimento}</strong></td>
+                <td>${t.quem_foram}</td>
+                <td class="negative"><strong>${formatCurrency(valor)}</strong></td>
+                <td class="action-btns">
+                    <button class="btn btn-sm btn-danger" onclick="deletarAlmoco('${t.id}')" title="Excluir"><i class="ph ph-trash"></i></button>
+                </td>
+            `;
+            almocosTbody.appendChild(tr);
+        });
+
+        // Atualizar total
+        const elTotal = document.getElementById('almocos-total');
+        if (elTotal) elTotal.textContent = formatCurrency(totalGasto);
+
+        // Atualizar resumo por estabelecimento
+        const summaryContainer = document.getElementById('almocos-estabelecimentos-summary');
+        if (summaryContainer) {
+            summaryContainer.innerHTML = '';
+            for (const [est, val] of Object.entries(estabelecimentosMap)) {
+                summaryContainer.innerHTML += `
+                    <div style="background: var(--sidebar-bg); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">${est}</span>
+                        <div style="font-weight: 600; font-size: 16px;" class="negative">${formatCurrency(val)}</div>
+                    </div>
+                `;
+            }
+            if(Object.keys(estabelecimentosMap).length === 0) {
+                summaryContainer.innerHTML = '<span style="color: var(--text-secondary);">Nenhum gasto registrado.</span>';
+            }
+        }
+    };
+
+    if(almocoForm) {
+        almocoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = document.getElementById('a-data').value;
+            const valor = parseFloat(document.getElementById('a-valor').value);
+            const quem_foram = document.getElementById('a-quem').value;
+            const estabelecimento = document.getElementById('a-onde').value;
+            
+            const submitBtn = almocoForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Registrando...';
+            submitBtn.disabled = true;
+
+            const { data: newData, error } = await supabase
+                .from('lunches')
+                .insert([
+                    { data, valor, quem_foram, estabelecimento }
+                ])
+                .select();
+
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (!error && newData) {
+                almocos.unshift(newData[0]);
+                almocoForm.reset();
+                document.getElementById('a-data').valueAsDate = new Date();
+                renderAlmocos();
+            } else {
+                alert('Erro ao salvar almoço: ' + error.message);
+                console.error(error);
+            }
+        });
+    }
+
+    window.deletarAlmoco = async (id) => {
+        if(confirm('Tem certeza que deseja deletar este almoço?')) {
+            const { error } = await supabase
+                .from('lunches')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                almocos = almocos.filter(t => t.id !== id);
+                renderAlmocos();
             } else {
                 alert('Erro ao deletar: ' + error.message);
             }
