@@ -100,6 +100,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro ao buscar empréstimos:', eError);
         }
 
+        // Load Reunioes
+        const { data: rData, error: rError } = await supabase
+            .from('meetings')
+            .select('*')
+            .order('data', { ascending: true })
+            .order('horario', { ascending: true });
+
+        if (!rError && rData) {
+            reunioes = rData;
+        } else {
+            console.error('Erro ao buscar reuniões:', rError);
+        }
+
         updateBuggySummary();
         renderBuggyTable();
         renderCobrancas();
@@ -108,6 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderGeralTable();
         updateEmprestimosSummary();
         renderEmprestimosTable();
+        if(typeof renderReunioesTable === 'function') renderReunioesTable();
     };
 
     // ==== Buggy Control Logic ====
@@ -928,6 +942,103 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else {
                 alert('Erro ao dar baixa: ' + error.message);
+            }
+        }
+    };
+
+    // ==== Reunioes Logic ====
+    let reunioes = [];
+    const reuniaoForm = document.getElementById('reuniao-form');
+    const reunioesTbody = document.getElementById('reunioes-tbody');
+    const rDataInput = document.getElementById('r-data');
+    if (rDataInput) rDataInput.valueAsDate = new Date();
+
+    window.renderReunioesTable = () => {
+        if(!reunioesTbody) return;
+        reunioesTbody.innerHTML = '';
+
+        // Sort by date and time
+        reunioes.sort((a, b) => {
+            const dateA = new Date(`${a.data}T${a.horario}`);
+            const dateB = new Date(`${b.data}T${b.horario}`);
+            return dateA - dateB;
+        });
+
+        if (reunioes.length === 0) {
+            reunioesTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-secondary);">Nenhuma reunião agendada.</td></tr>`;
+            return;
+        }
+
+        reunioes.forEach(t => {
+            const tr = document.createElement('tr');
+            
+            let dateStr = t.data;
+            if(t.data) {
+                const parts = t.data.split('-');
+                if(parts.length === 3) {
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><strong>${t.horario}</strong></td>
+                <td><strong>${t.titulo}</strong></td>
+                <td class="action-btns">
+                    <button class="btn btn-sm btn-danger" onclick="deletarReuniao('${t.id}')" title="Excluir"><i class="ph ph-trash"></i></button>
+                </td>
+            `;
+            reunioesTbody.appendChild(tr);
+        });
+    };
+
+    if(reuniaoForm) {
+        reuniaoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const titulo = document.getElementById('r-titulo').value;
+            const data = document.getElementById('r-data').value;
+            const horario = document.getElementById('r-horario').value;
+            
+            const submitBtn = reuniaoForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Agendando...';
+            submitBtn.disabled = true;
+
+            const { data: newData, error } = await supabase
+                .from('meetings')
+                .insert([
+                    { titulo, data, horario }
+                ])
+                .select();
+
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (!error && newData) {
+                reunioes.push(newData[0]);
+                reuniaoForm.reset();
+                document.getElementById('r-data').valueAsDate = new Date();
+                renderReunioesTable();
+            } else {
+                alert('Erro ao salvar reunião: ' + error.message);
+                console.error(error);
+            }
+        });
+    }
+
+    window.deletarReuniao = async (id) => {
+        if(confirm('Tem certeza que deseja deletar esta reunião?')) {
+            const { error } = await supabase
+                .from('meetings')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                reunioes = reunioes.filter(t => t.id !== id);
+                renderReunioesTable();
+            } else {
+                alert('Erro ao deletar: ' + error.message);
             }
         }
     };

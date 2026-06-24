@@ -33,6 +33,9 @@
                 <button class="nav-item" data-target="comissoes-tab">
                     <i class="ph ph-users"></i> Comissões Motorista
                 </button>
+                <button class="nav-item" data-target="reunioes-tab">
+                    <i class="ph ph-calendar"></i> Reuniões
+                </button>
             </nav>
         </aside>
 
@@ -409,6 +412,56 @@
                                     </tr>
                                 </thead>
                                 <tbody id="emprestimos-tbody">
+                                    <!-- Rows here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reuniões Tab -->
+            <section id="reunioes-tab" class="tab-content">
+                <header class="header">
+                    <h1>Controle de Reuniões</h1>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Gerencie as reuniões agendadas.</p>
+                </header>
+
+                <div class="content-grid">
+                    <div class="form-panel card">
+                        <h2>Nova Reunião</h2>
+                        <form id="reuniao-form">
+                            <div class="form-group">
+                                <label>Título/Pessoa</label>
+                                <input type="text" id="r-titulo" placeholder="Ex: Reunião com Cliente X" required>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col">
+                                    <label>Data</label>
+                                    <input type="date" id="r-data" required>
+                                </div>
+                                <div class="col">
+                                    <label>Horário Inicial</label>
+                                    <input type="time" id="r-horario" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Agendar Reunião</button>
+                        </form>
+                    </div>
+
+                    <div class="list-panel card">
+                        <h2>Próximas Reuniões</h2>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Horário Inicial</th>
+                                        <th>Título/Pessoa</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reunioes-tbody">
                                     <!-- Rows here -->
                                 </tbody>
                             </table>
